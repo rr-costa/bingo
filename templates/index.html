@@ -11,54 +11,19 @@
         button { background: #3498db; color: white; border: none; cursor: pointer; transition: background 0.3s; }
         button:hover { background: #2980b9; }
         button:disabled { background: #95a5a6; cursor: not-allowed; }
-        .config-item { display: flex; align-items: center; gap: 5px; }
-        .config-item input { width: 60px; padding: 5px; }
-        .number-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 2px; margin-top: 20px; }
-        .number { padding: 15px; text-align: center; background: #3498db; color: white; cursor: pointer; border-radius: 3px; }
-        .number.header { background: #2c3e50; font-weight: bold; }
+        .config-item { display: flex; align-items: center; gap: 10px; margin-right: 15px; }
+        .config-item input { width: 50px; padding: 5px; }
+        .number-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 20px; }
+        .number { padding: 15px; text-align: center; background: #3498db; color: white; cursor: pointer; border-radius: 3px; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+        .number.header { background: #2c3e50; font-weight: bold; height: 30px; }
         .number.selected { background: #2ecc71; }
         .results-panel { margin-top: 20px; padding: 15px; background: #fff8e1; border-radius: 8px; }
         .winner-item { margin: 10px 0; padding: 10px; background: #e8f5e9; border-radius: 5px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .counter { color: #666; font-size: 0.9em; }
-        select:disabled, input:disabled {
-            background-color: #f0f0f0;
-            cursor: not-allowed;
-            opacity: 0.8;
-        }
-        .number {
-            min-width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-        .number-grid {
-            grid-template-columns: repeat(5, 1fr);
-            gap: 5px;
-        }
-        .number.header {
-            font-weight: bold;
-            font-size: 16px;
-            height: 30px;
-        }
-        .status-item {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            margin-left: auto;
-            text-align: right;
-        }
-        .status-item div {
-            margin: 5px 0;
-            color: #666;
-            font-size: 0.9em;
-        }
-        .status-item span {
-            font-weight: bold;
-            color: #2c3e50;
-        }
+        .status-item { background: #f8f9fa; padding: 10px; border-radius: 5px; margin-left: auto; text-align: right; }
+        .status-item div { margin: 5px 0; color: #666; font-size: 0.9em; }
+        .status-item span { font-weight: bold; color: #2c3e50; }
     </style>
 </head>
 <body>
@@ -86,21 +51,20 @@
             
             <div class="selectors">
                 <div class="config-item">
-                    <label>Máx 4 Cantos: <span class="counter" id="contador-4cantos">0/0</span></label>
+                    <label>Máx 4 Cantos: <span class="counter" id="contador-4cantos">0/1</span></label>
                     <input type="number" id="max_4cantos" min="0" value="1">
                 </div>
                 <div class="config-item">
-                    <label>Máx Cinquinas: <span class="counter" id="contador-cinquinas">0/0</span></label>
+                    <label>Máx Cinquinas: <span class="counter" id="contador-cinquinas">0/1</span></label>
                     <input type="number" id="max_cinquinas" min="0" value="1">
                 </div>
                 <div class="config-item">
-                    <label>Máx Cartela Cheia: <span class="counter" id="contador-cartela-cheia">0/0</span></label>
+                    <label>Máx Cartela Cheia: <span class="counter" id="contador-cartela-cheia">0/1</span></label>
                     <input type="number" id="max_cartela_cheia" min="0" value="1">
                 </div>
                 <div class="status-item">
                     <div>Cartelas Quentes (1 número): <span id="cartelas-quentes">0</span></div>
                     <div>Cartelas Mornas (2 números): <span id="cartelas-mornas">0</span></div>
-                </div>
                 </div>
             </div>
         </div>
@@ -117,6 +81,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // Variáveis globais
         let numerosSorteados = [];
         let cartelasRodada = [];
         let limites = {
@@ -124,7 +89,6 @@
             cinquinas: 1,
             cartelaCheia: 1
         };
-
         let contadores = {
             quatroCantos: 0,
             cinquinas: 0,
@@ -132,12 +96,12 @@
         };
 
         $(document).ready(function() {
-            // Inicializa os valores dos inputs e contadores
-            inicializarContadores();
+            // Inicialização
+            atualizarContadores();
             carregarEventos();
             criarGridNumeros();
 
-            // Atualiza quando valores dos inputs mudam
+            // Event listeners para inputs
             $('#max_4cantos, #max_cinquinas, #max_cartela_cheia').on('change', function() {
                 limites.quatroCantos = parseInt($('#max_4cantos').val()) || 0;
                 limites.cinquinas = parseInt($('#max_cinquinas').val()) || 0;
@@ -145,38 +109,29 @@
                 atualizarContadores();
             });
 
-            // Inicializa os contadores corretamente
-            limites = {
-                quatroCantos: parseInt($('#max_4cantos').val()) || 0,
-                cinquinas: parseInt($('#max_cinquinas').val()) || 0,
-                cartelaCheia: parseInt($('#max_cartela_cheia').val()) || 0
-            };
-            
-            contadores = {
-                quatroCantos: 0,
-                cinquinas: 0,
-                cartelaCheia: 0
-            };
-            atualizarContadores();
-
+            // Botão iniciar rodada
             $('#iniciar').click(function() {
+                // Atualiza limites com valores atuais
+                limites.quatroCantos = parseInt($('#max_4cantos').val()) || 0;
+                limites.cinquinas = parseInt($('#max_cinquinas').val()) || 0;
+                limites.cartelaCheia = parseInt($('#max_cartela_cheia').val()) || 0;
+                
+                // Reseta contadores
                 contadores = {
                     quatroCantos: 0,
                     cinquinas: 0,
                     cartelaCheia: 0
                 };
                 atualizarContadores();
-
-                 // Bloquear controles
-                $('#evento, #rodada, #max_4cantos, #max_cinquinas').prop('disabled', true);
+                
+                // Limpa resultados anteriores
+                $('#quatro-cantos, #cinquinas, #cartela-cheia').empty();
+                $('#cartelas-quentes, #cartelas-mornas').text('0');
+                
+                // Desabilita controles
+                $('#evento, #rodada, #max_4cantos, #max_cinquinas, #max_cartela_cheia').prop('disabled', true);
                 $(this).prop('disabled', true);
-                limites = {
-                    quatroCantos: parseInt($('#max_4cantos').val()) || 0,
-                    cinquinas: parseInt($('#max_cinquinas').val()) || 0
-                };
-                contadores = { quatroCantos: 0, cinquinas: 0 };
-                atualizarContadores();
-
+                
                 const evento = $('#evento').val();
                 const rodada = $('#rodada').val();
                 
@@ -185,28 +140,27 @@
                         cartelasRodada = data.cartelas;
                         numerosSorteados = [];
                         $('.number').removeClass('selected');
-                        $('#contador').text('0');
-                        alert(`Rodada ${rodada} iniciada! Cartelas: ${cartelasRodada.length}`);
-                    } 
-                    else {
-                        // Desbloquear se erro
-                        $('#evento, #rodada, #max_4cantos, #max_cinquinas, #iniciar').prop('disabled', false);
+                        alert(`Rodada ${rodada} iniciada com ${cartelasRodada.length} cartelas!`);
+                        $('#finalizar').show();
+                    } else {
+                        alert('Erro ao iniciar rodada: ' + data.message);
+                        reativarControles();
                     }
                 }).fail(function() {
-                    // Desbloquear se falha
-                    $('#evento, #rodada, #max_4cantos, #max_cinquinas, #iniciar').prop('disabled', false);
+                    alert('Falha na comunicação com o servidor');
+                    reativarControles();
                 });
-                $('#finalizar').show();
-                $(this).hide();
             });
             
+            // Botão finalizar rodada
             $('#finalizar').click(function() {
-                if(confirm('Deseja realmente finalizar a rodada? Todos os resultados serão limpos.')) {
+                if(confirm('Deseja realmente finalizar a rodada?')) {
                     finalizarRodada();
                 }
             });
             
-            $(document).on('click', '.number:not(.selected)', function() {
+            // Clique nos números
+            $(document).on('click', '.number:not(.selected):not(.header)', function() {
                 const num = $(this).data('number');
                 $(this).addClass('selected');
                 numerosSorteados.push(num);
@@ -214,24 +168,25 @@
             });
         });
 
-        function finalizarRodada() {
-            // Limpar resultados
-            $('#quatro-cantos, #cinquinas').empty();
-            
-            // Limpar números sorteados
-            $('.number').removeClass('selected');
-            numerosSorteados = [];
-            $('#contador').text('0');
-            $('#numeros-recentes').empty();
-            
-            // Resetar contadores
-            contadores = { quatroCantos: 0, cinquinas: 0 };
-            atualizarContadores();
-            
-            // Habilitar controles
-            $('#evento, #rodada, #max_4cantos, #max_cinquinas, #iniciar').prop('disabled', false);
+        function reativarControles() {
+            $('#evento, #rodada, #max_4cantos, #max_cinquinas, #max_cartela_cheia, #iniciar').prop('disabled', false);
             $('#finalizar').hide();
             $('#iniciar').show();
+        }
+
+        function finalizarRodada() {
+            // Limpa tudo
+            $('#quatro-cantos, #cinquinas, #cartela-cheia').empty();
+            $('.number').removeClass('selected');
+            numerosSorteados = [];
+            $('#cartelas-quentes, #cartelas-mornas').text('0');
+            
+            // Reseta contadores
+            contadores = { quatroCantos: 0, cinquinas: 0, cartelaCheia: 0 };
+            atualizarContadores();
+            
+            // Reativa controles
+            reativarControles();
         }
 
         function carregarEventos() {
@@ -243,8 +198,10 @@
 
         function criarGridNumeros() {
             const letras = ['B', 'I', 'N', 'G', 'O'];
+            // Cabeçalho
             letras.forEach(l => $('#numeros').append(`<div class="number header">${l}</div>`));
             
+            // Números (5 colunas x 15 linhas)
             for (let i = 0; i < 15; i++) {
                 letras.forEach((l, idx) => {
                     const num = i + 1 + (idx * 15);
@@ -263,134 +220,59 @@
                     cartelas: cartelasRodada
                 }),
                 success: function(data) {
-                    // Processar cartela cheia
-                    const disponivelCheia = limites.cartelaCheia - contadores.cartelaCheia;
-                    const novosCheia = data.cartela_cheia.slice(0, disponivelCheia);
-                    
-                    novosCheia.forEach(folha => {
-                        $('#cartela-cheia').append(
-                            `<div class="winner-item">🎉 CARTELA CHEIA: Folha ${folha}</div>`
-                        ).show();
-                        contadores.cartelaCheia++;
-                    });
-
-                    // Atualizar status
+                    // Atualiza status
                     $('#cartelas-quentes').text(data.status.quentes);
                     $('#cartelas-mornas').text(data.status.mornas);
                     
-                    const novosGanhadores = {
-                        quatroCantos: new Set(),
-                        cinquinas: new Set()
-                    };
-
-                    // Processar 4 cantos
-                    data.quatro_cantos.forEach(folha => {
-                        if (contadores.quatroCantos < limites.quatroCantos && !novosGanhadores.quatroCantos.has(folha)) {
-                            novosGanhadores.quatroCantos.add(folha);
-                            contadores.quatroCantos++;
-                        }
-                    });
-
-                    // Processar cinquinas (linhas, colunas e diagonais)
-                    const processarTipo = (vencedores, tipo) => {
-                        vencedores.forEach(v => {
-                            const idUnico = `${v.folha}-${tipo}-${v.posicao}`;
-                            if (contadores.cinquinas < limites.cinquinas && !novosGanhadores.cinquinas.has(idUnico)) {
-                                novosGanhadores.cinquinas.add(idUnico);
-                                contadores.cinquinas++;
-                            }
-                        });
-                    };
-
-                    processarTipo(data.linhas, 'LINHA');
-                    processarTipo(data.colunas, 'COLUNA');
-                    processarTipo(data.diagonais, 'DIAGONAL');
-
-                    // Atualizar exibição
-                    atualizarExibicao(novosGanhadores);
+                    // Processa cartela cheia
+                    processarVencedores('cartela-cheia', data.cartela_cheia, 'CARTELA CHEIA', 'cartelaCheia');
+                    
+                    // Processa 4 cantos
+                    processarVencedores('quatro-cantos', data.quatro_cantos, 'QUATRO CANTOS', 'quatroCantos');
+                    
+                    // Processa cinquinas (linhas, colunas, diagonais)
+                    processarCinquinas(data);
+                    
+                    // Atualiza contadores
                     atualizarContadores();
                 }
             });
         }
 
-        function processarVencedores(tipo, dados, label, contador) {
-            const disponivel = limites[contador] - contadores[contador];
+        function processarVencedores(containerId, dados, label, tipoContador) {
+            const disponivel = limites[tipoContador] - contadores[tipoContador];
             const novos = dados.slice(0, disponivel);
             
             novos.forEach(folha => {
-                $(`#${tipo}`).append(`<div class="winner-item">🎉 ${label}: Folha ${folha}</div>`);
-                contadores[contador]++;
+                $(`#${containerId}`).append(
+                    `<div class="winner-item">🎉 ${label}: Folha ${folha}</div>`
+                );
+                contadores[tipoContador]++;
             });
         }
 
         function processarCinquinas(data) {
             const tipos = [
                 {dados: data.linhas, label: 'LINHA'},
-                {dados: data.colunas, label: 'COLUNA'}, 
+                {dados: data.colunas, label: 'COLUNA'},
                 {dados: data.diagonais, label: 'DIAGONAL'}
             ];
 
             tipos.forEach(t => {
                 const disponivel = limites.cinquinas - contadores.cinquinas;
                 t.dados.slice(0, disponivel).forEach(v => {
-                    $('#cinquinas').append(`<div class="winner-item">🎉 ${t.label} COMPLETA: Folha ${v.folha} (${v.posicao})</div>`);
+                    $('#cinquinas').append(
+                        `<div class="winner-item">🎉 ${t.label} COMPLETA: Folha ${v.folha} (${v.posicao})</div>`
+                    );
                     contadores.cinquinas++;
                 });
             });
-        }
-
-        function atualizarExibicao(novosGanhadores) {
-            // 4 Cantos
-            novosGanhadores.quatroCantos.forEach(folha => {
-                $('#quatro-cantos').append(
-                    `<div class="winner-item">🎉 QUATRO CANTOS: Folha ${folha}</div>`
-                ).show();
-            });
-
-            // Cinquinas
-            novosGanhadores.cinquinas.forEach(id => {
-                const [folha, tipo, posicao] = id.split('-');
-                $('#cinquinas').append(
-                    `<div class="winner-item">🎉 ${tipo} COMPLETA: Folha ${folha} (${posicao.replace(/-/g, ' ')})</div>`
-                ).show();
-            });
-        }
-
-        function inicializarContadores() {
-            // Seta valores iniciais dos inputs
-            $('#max_4cantos').val(limites.quatroCantos);
-            $('#max_cinquinas').val(limites.cinquinas);
-            $('#max_cartela_cheia').val(limites.cartelaCheia);
-            
-            // Atualiza exibição
-            atualizarContadores();
         }
 
         function atualizarContadores() {
             $('#contador-4cantos').text(`${contadores.quatroCantos}/${limites.quatroCantos}`);
             $('#contador-cinquinas').text(`${contadores.cinquinas}/${limites.cinquinas}`);
             $('#contador-cartela-cheia').text(`${contadores.cartelaCheia}/${limites.cartelaCheia}`);
-        }
-
-        function criarGridNumerosOrdenado() {
-            const letras = ['B', 'I', 'N', 'G', 'O'];
-            const colunas = [
-                Array.from({length: 15}, (_, i) => i + 1),   // B 1-15
-                Array.from({length: 15}, (_, i) => i + 16),  // I 16-30
-                Array.from({length: 15}, (_, i) => i + 31),  // N 31-45
-                Array.from({length: 15}, (_, i) => i + 46),  // G 46-60
-                Array.from({length: 15}, (_, i) => i + 61)   // O 61-75
-            ];
-
-            // Cabeçalho
-            letras.forEach(l => $('#numeros').append(`<div class="number header">${l}</div>`));
-            
-            // Números ordenados
-            for (let i = 0; i < 15; i++) {
-                colunas.forEach((col, idx) => {
-                    $('#numeros').append(`<div class="number" data-number="${col[i]}" data-letra="${letras[idx]}">${col[i]}</div>`);
-                });
-            }
         }
     </script>
 </body>

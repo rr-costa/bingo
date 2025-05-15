@@ -72,9 +72,9 @@ def verificar_vencedor():
             
             # Verificar 4 cantos
             cantos = [
-                numeros[0][0], numeros[0][4],  # B1, B5
-                numeros[4][0], numeros[4][4]    # O1, O5
-            ]
+                numeros[0][0], numeros[0][4],
+                numeros[4][0], numeros[4][4]
+                ]
             if all(str(c) in map(str, numeros_sorteados) or c == "FREE" for c in cantos):
                 resultados['quatro_cantos'].append(folha)
             
@@ -95,7 +95,7 @@ def verificar_vencedor():
             if all(str(n) in map(str, numeros_sorteados) or n == "FREE" for n in diagonal2):
                 resultados['diagonais'].append({'folha': folha, 'posicao': 'Diagonal Secundária'})
 
-            # Verificar cartela cheia e contagem quente/morna - CORREÇÃO AQUI
+            # Verificar cartela cheia
             numeros_validos = [num for linha in numeros for num in linha if num != "FREE"]
             numeros_faltando = sum(1 for num in numeros_validos if str(num) not in map(str, numeros_sorteados))
             
@@ -110,5 +110,6 @@ def verificar_vencedor():
         
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
