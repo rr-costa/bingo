@@ -132,12 +132,41 @@
         };
 
         $(document).ready(function() {
+            // Inicializa os valores dos inputs e contadores
+            inicializarContadores();
             carregarEventos();
             criarGridNumeros();
 
-            $('#iniciar').click(function() {
+            // Atualiza quando valores dos inputs mudam
+            $('#max_4cantos, #max_cinquinas, #max_cartela_cheia').on('change', function() {
+                limites.quatroCantos = parseInt($('#max_4cantos').val()) || 0;
+                limites.cinquinas = parseInt($('#max_cinquinas').val()) || 0;
                 limites.cartelaCheia = parseInt($('#max_cartela_cheia').val()) || 0;
-                $('#quatro-cantos, #cinquinas').empty();
+                atualizarContadores();
+            });
+
+            // Inicializa os contadores corretamente
+            limites = {
+                quatroCantos: parseInt($('#max_4cantos').val()) || 0,
+                cinquinas: parseInt($('#max_cinquinas').val()) || 0,
+                cartelaCheia: parseInt($('#max_cartela_cheia').val()) || 0
+            };
+            
+            contadores = {
+                quatroCantos: 0,
+                cinquinas: 0,
+                cartelaCheia: 0
+            };
+            atualizarContadores();
+
+            $('#iniciar').click(function() {
+                contadores = {
+                    quatroCantos: 0,
+                    cinquinas: 0,
+                    cartelaCheia: 0
+                };
+                atualizarContadores();
+
                  // Bloquear controles
                 $('#evento, #rodada, #max_4cantos, #max_cinquinas').prop('disabled', true);
                 $(this).prop('disabled', true);
@@ -325,6 +354,16 @@
                     `<div class="winner-item">🎉 ${tipo} COMPLETA: Folha ${folha} (${posicao.replace(/-/g, ' ')})</div>`
                 ).show();
             });
+        }
+
+        function inicializarContadores() {
+            // Seta valores iniciais dos inputs
+            $('#max_4cantos').val(limites.quatroCantos);
+            $('#max_cinquinas').val(limites.cinquinas);
+            $('#max_cartela_cheia').val(limites.cartelaCheia);
+            
+            // Atualiza exibição
+            atualizarContadores();
         }
 
         function atualizarContadores() {
