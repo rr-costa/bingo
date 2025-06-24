@@ -185,17 +185,17 @@ class BingoGenerator:
         box_width = 1*cm
         box_height = 1*cm
         box_x = pos_x - box_width/2
-        box_y = pos_y - box_height/2 + 0.1*cm
+        box_y = pos_y - box_height/2 + 0.2*cm
         
         c.setStrokeColor(HexColor("#000000"))
         c.roundRect(box_x, box_y, box_width, box_height, 5, fill=0, stroke=1)
         
         if conteudo == "FREE":
             if self.usar_imagem_free:
-                c.drawImage(self.img_free, pos_x-0.5*cm, pos_y-0.4*cm, 
+                c.drawImage(self.img_free, pos_x-0.5*cm, pos_y-0.3*cm, 
                           width=1*cm, height=1*cm)
             else:
-                c.drawCentredString(pos_x, pos_y, "FREE")
+                c.drawCentredString(pos_x, pos_y, "X")
         else:
             c.drawCentredString(pos_x, pos_y, str(conteudo))
 
@@ -206,7 +206,7 @@ class BingoGenerator:
             x = (largura_pagina - (self.cartelas_por_folha * self.LARGURA_CARTELA) - 
                 ((self.cartelas_por_folha - 1) * self.espacamento_h)) / 2
             x += posicao * (self.LARGURA_CARTELA + self.espacamento_h)
-            y = self.margem_superior
+            y = self.margem_superior + 1 * cm ### ToDo tirar esse +1cm
         else:
             # Duas linhas (3 na primeira, resto na segunda)
             if posicao < 3:
