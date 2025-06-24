@@ -1,0 +1,18 @@
+# Ignora PDFs exceto um específico
+*.pdf
+# Ignora PDFs apenas na pasta docs/
+pdfs/*.pdf
+*.pdf
+# .gitignore
+node_modules/
+.env
+.DS_Store
+dist/
+*.log
+*.tmp
+
+# Virtualenv
+venv/
+.venv/
+env/
+.env/
