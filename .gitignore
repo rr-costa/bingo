@@ -1,18 +1,29 @@
-# Ignora PDFs exceto um específico
-*.pdf
-# Ignora PDFs apenas na pasta docs/
-pdfs/*.pdf
-*.pdf
-# .gitignore
-node_modules/
-.env
-.DS_Store
-dist/
-*.log
-*.tmp
+# Ambientes Virtuais
+/venv/
+/.venv/
+/env/
+/.env/
 
-# Virtualenv
-venv/
-.venv/
-env/
-.env/
+# Ficheiros de IDEs (PyCharm, VSCode)
+/.idea/
+/.vscode/
+
+# Dependências de Node.js
+/node_modules/
+
+# Ficheiros de Base de Dados
+*.db
+*.sqlite3
+
+# Ficheiros de compilação do Python
+__pycache__/
+*.pyc
+
+# Ficheiros gerados
+*.pdf
+*.log
+dist/
+build/
+
+# Ficheiros de Sistema Operacional
+.DS_Store
