@@ -46,13 +46,15 @@ class BingoGenerator:
     
     def __init__(self, nome_evento: str = "Evento Padrão", 
                  cartelas_por_folha: int = DEFAULT_CARTELAS_POR_FOLHA,
-                 num_folhas: int = DEFAULT_NUM_FOLHAS):
+                 num_folhas: int = DEFAULT_NUM_FOLHAS,
+                 append: bool = False):
         """Inicializa o gerador de cartelas.
         
         Args:
             nome_evento: Nome do evento de bingo
             cartelas_por_folha: Quantidade de cartelas por folha (1-6)
             num_folhas: Número total de folhas a gerar
+            append: Se True, adiciona ao evento existente em vez de recriar
         """
         self.cartelas: List[List[Tuple]] = []
         self.usar_fundo = False
@@ -62,11 +64,24 @@ class BingoGenerator:
         self.nome_evento = nome_evento
         self.cartelas_por_folha = min(max(1, cartelas_por_folha), 6)  # Limita entre 1 e 6
         self.num_folhas = max(1, num_folhas)  # Pelo menos 1 folha
+        self.append_mode = append
         self.db = BingoDatabase(self.DB_NAME)
         
-        # Limpa cartelas existentes deste evento
-        removidas = self.db.limpar_cartelas_evento(self.nome_evento)
-        print(f"Removidas {removidas} cartelas existentes do evento '{self.nome_evento}'")
+        # Só limpa cartelas existentes se não for modo append
+        if not self.append_mode:
+            # Verifica se já existem cartelas para o evento
+            count = self.db.contar_cartelas_evento(self.nome_evento)
+            if count > 0:
+                # Solicita confirmação do usuário
+                resposta = input(f"Existem {count} cartelas para o evento '{self.nome_evento}'. Deseja excluí-las? (s/n): ").strip().lower()
+                if resposta != 's':
+                    print("Operação cancelada pelo usuário.")
+                    exit(0)
+            
+            removidas = self.db.limpar_cartelas_evento(self.nome_evento)
+            print(f"Removidas {removidas} cartelas existentes do evento '{self.nome_evento}'")
+        else:
+            print(f"Modo acréscimo: novas cartelas serão adicionadas ao evento '{self.nome_evento}'")
         
         self._carregar_fontes()
         self._calcular_layout()
@@ -113,6 +128,11 @@ class BingoGenerator:
         """Gera o ID único no formato EVENTO_F{folha}C{posicao}."""
         return f"{self.nome_evento}_F{folha}C{posicao}"
 
+    def _obter_proxima_folha(self) -> int:
+        """Obtém o número da próxima folha disponível para o evento."""
+        ultima_folha = self.db.obter_ultima_folha_evento(self.nome_evento)
+        return ultima_folha + 1 if ultima_folha is not None else 1
+
     def carregar_imagens(self):
         """Carrega e prepara as imagens necessárias."""
         # Carrega imagem de fundo
@@ -137,12 +157,20 @@ class BingoGenerator:
         total_cartelas = self.num_folhas * self.cartelas_por_folha
         self.cartelas = []
         
+        # Se for modo append, verifica cartelas existentes para evitar duplicatas
+        cartelas_existentes = []
+        if self.append_mode:
+            cartelas_existentes = self.db.obter_todas_cartelas_evento(self.nome_evento)
+            print(f"Encontradas {len(cartelas_existentes)} cartelas existentes no evento")
+        
         while len(self.cartelas) < total_cartelas:
             nova_cartela = self.gerar_cartela_unica()
-            if nova_cartela not in self.cartelas:
+            
+            # Verifica se a cartela já existe (tanto nas novas quanto nas existentes)
+            if nova_cartela not in self.cartelas and nova_cartela not in cartelas_existentes:
                 self.cartelas.append(nova_cartela)
         
-        print(f"Total de cartelas geradas: {len(self.cartelas)}")
+        print(f"Total de novas cartelas geradas: {len(self.cartelas)}")
 
     def desenhar_cartela(self, c: canvas.Canvas, cartela: List[Tuple], 
                         x: float, y: float, indice: int):
@@ -185,17 +213,17 @@ class BingoGenerator:
         box_width = 1*cm
         box_height = 1*cm
         box_x = pos_x - box_width/2
-        box_y = pos_y - box_height/2 + 0.1*cm
+        box_y = pos_y - box_height/2 + 0.2*cm
         
         c.setStrokeColor(HexColor("#000000"))
         c.roundRect(box_x, box_y, box_width, box_height, 5, fill=0, stroke=1)
         
         if conteudo == "FREE":
             if self.usar_imagem_free:
-                c.drawImage(self.img_free, pos_x-0.5*cm, pos_y-0.4*cm, 
+                c.drawImage(self.img_free, pos_x-0.5*cm, pos_y-0.3*cm, 
                           width=1*cm, height=1*cm)
             else:
-                c.drawCentredString(pos_x, pos_y, "FREE")
+                c.drawCentredString(pos_x, pos_y, "X")
         else:
             c.drawCentredString(pos_x, pos_y, str(conteudo))
 
@@ -206,7 +234,7 @@ class BingoGenerator:
             x = (largura_pagina - (self.cartelas_por_folha * self.LARGURA_CARTELA) - 
                 ((self.cartelas_por_folha - 1) * self.espacamento_h)) / 2
             x += posicao * (self.LARGURA_CARTELA + self.espacamento_h)
-            y = self.margem_superior
+            y = self.margem_superior + 1 * cm
         else:
             # Duas linhas (3 na primeira, resto na segunda)
             if posicao < 3:
@@ -226,10 +254,26 @@ class BingoGenerator:
     def criar_pdf(self):
         """Cria o PDF com todas as cartelas geradas e armazena no banco de dados."""
         nome_arquivo = f"cartelas_{self.nome_evento.replace(' ', '_')}.pdf"
+        
+        # Modo append: gera novo arquivo com sufixo numérico
+        if self.append_mode:
+            contador = 1
+            while os.path.exists(nome_arquivo):
+                base, ext = os.path.splitext(nome_arquivo)
+                nome_arquivo = f"{base}_{contador}{ext}"
+                contador += 1
+        
         c = canvas.Canvas(nome_arquivo, pagesize=A4)
         largura, altura = A4
         
+        # Determina o número da primeira folha
+        folha_inicial = 1
+        if self.append_mode:
+            folha_inicial = self._obter_proxima_folha()
+        
         for folha in range(self.num_folhas):
+            folha_atual = folha_inicial + folha
+            
             # Desenha imagem de fundo
             if self.usar_fundo:
                 c.drawImage(self.img_fundo, 0, 0, width=largura, height=altura)
@@ -237,7 +281,7 @@ class BingoGenerator:
             # Número da folha
             c.setFillColor(HexColor("#000000"))
             c.setFont("Helvetica-Bold", 14)
-            c.drawRightString(largura - 1*cm, altura - 1*cm, f"Cartela {folha + 1}")
+            c.drawRightString(largura - 1*cm, altura - 1*cm, f"Cartela {folha_atual}")
             
             # Desenha as cartelas da folha
             for posicao in range(self.cartelas_por_folha):
@@ -245,14 +289,14 @@ class BingoGenerator:
                 x, y = self._calcular_posicao_cartela(posicao, largura)
                 
                 # Gera ID único e salva no banco
-                id_cartela = self._gerar_id_cartela(folha + 1, posicao + 1)
+                id_cartela = self._gerar_id_cartela(folha_atual, posicao + 1)
                 rodada = (posicao % len(self.CORES_RODADAS)) + 1
                 premio = ""
                 
                 self.db.salvar_cartela(
                     evento=self.nome_evento,
                     id_cartela=id_cartela,
-                    folha=folha + 1,
+                    folha=folha_atual,
                     posicao=posicao + 1,
                     numeros=self.cartelas[idx],
                     rodada=rodada,
@@ -264,7 +308,7 @@ class BingoGenerator:
             c.showPage()
         
         c.save()
-        print(f"PDF gerado com sucesso: {nome_arquivo}")
+        print(f"PDF {'gerado' if not self.append_mode else 'adicionado'} com sucesso: {nome_arquivo}")
 
     def executar(self):
         """Executa todo o processo de geração das cartelas."""
@@ -289,12 +333,15 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--folhas', type=int, 
                        default=BingoGenerator.DEFAULT_NUM_FOLHAS,
                        help='Número total de folhas a gerar')
+    parser.add_argument('-a', '--append', action='store_true',
+                       help='Adiciona novas cartelas a um evento existente sem apagar as antigas')
     
     args = parser.parse_args()
     
     gerador = BingoGenerator(
         nome_evento=args.nome_evento,
         cartelas_por_folha=args.cartelas_por_folha,
-        num_folhas=args.folhas
+        num_folhas=args.folhas,
+        append=args.append
     )
     gerador.executar()

@@ -1,15 +1,15 @@
 # Ambientes Virtuais
-venv/
-.venv/
-env/
-.env/
+/venv/
+/.venv/
+/env/
+/.env/
 
 # Ficheiros de IDEs (PyCharm, VSCode)
-.idea/
-.vscode/
+/.idea/
+/.vscode/
 
 # Dependências de Node.js
-node_modules/
+/node_modules/
 
 # Ficheiros de Base de Dados
 *.db
