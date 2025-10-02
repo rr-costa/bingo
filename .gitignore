@@ -1,29 +1,18 @@
 # Ambientes Virtuais
 /venv/
-/.venv/
-/env/
-/.env/
 
 # Ficheiros de IDEs (PyCharm, VSCode)
 /.idea/
-/.vscode/
 
-# Dependências de Node.js
+# Dependências de Node.js (se usares no futuro)
 /node_modules/
 
-# Ficheiros de Base de Dados
-*.db
-*.sqlite3
+# Ficheiros Gerados (PDFs, base de dados, etc.)
+/output/
 
 # Ficheiros de compilação do Python
 __pycache__/
 *.pyc
-
-# Ficheiros gerados
-*.pdf
-*.log
-dist/
-build/
 
 # Ficheiros de Sistema Operacional
 .DS_Store

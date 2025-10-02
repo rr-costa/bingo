@@ -16,9 +16,9 @@ class BingoGenerator:
     """Classe principal para geração e armazenamento de cartelas de bingo."""
     
     # Constantes de configuração
-    IMAGEM_FUNDO = "static/images/fundo_bingo.png"
-    IMAGEM_FREE = "static/images/free.jpg"
-    DB_NAME = "output/bingo_cartelas.db"
+    IMAGEM_FUNDO = "fundo_bingo.png"
+    IMAGEM_FREE = "free.jpg"
+    DB_NAME = "bingo_cartelas.db"
     
     # Configurações padrão
     DEFAULT_CARTELAS_POR_FOLHA = 5
@@ -40,8 +40,8 @@ class BingoGenerator:
     
     # Configurações de fonte
     FONTES = {
-        'numeros': ('ComicSans', 'static/fonts/COMIC.TTF'),
-        'bingo': ('KGHappy', 'static/fonts/KGHAPPY.ttf')
+        'numeros': ('ComicSans', 'COMIC.TTF'),
+        'bingo': ('KGHappy', 'KGHAPPY.ttf')
     }
     
     def __init__(self, nome_evento: str = "Evento Padrão", 
@@ -253,7 +253,7 @@ class BingoGenerator:
 
     def criar_pdf(self):
         """Cria o PDF com todas as cartelas geradas e armazena no banco de dados."""
-        nome_arquivo = f"output/cartelas_{self.nome_evento.replace(' ', '_')}.pdf"
+        nome_arquivo = f"cartelas_{self.nome_evento.replace(' ', '_')}.pdf"
         
         # Modo append: gera novo arquivo com sufixo numérico
         if self.append_mode:

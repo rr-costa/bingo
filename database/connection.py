@@ -14,7 +14,7 @@ class BingoDatabase:
                     cls._instance.initialized = False
         return cls._instance
     
-    def __init__(self, db_name="output/bingo_cartelas.db"):
+    def __init__(self, db_name: str = "bingo_cartelas.db"):
         if not self.initialized:
             self.db_name = db_name
             self.thread_local = threading.local()
