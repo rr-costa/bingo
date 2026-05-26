@@ -17,7 +17,7 @@ class BingoGenerator:
     
     # Constantes de configuração
     IMAGEM_FUNDO = "static/images/fundo_bingo.png"
-    IMAGEM_FREE = "static/images/free.jpg"
+    IMAGEM_FREE = "static/images/free.png"
     DB_NAME = "output/bingo_cartelas.db"
     
     # Configurações padrão
@@ -88,21 +88,32 @@ class BingoGenerator:
 
     def _calcular_layout(self):
         """Calcula o layout das cartelas na folha baseado no número por folha."""
-        if self.cartelas_por_folha <= 3:
-            # 1 linha com todas as cartelas
-            self.colunas_por_linha = self.cartelas_por_folha
-            self.linhas_por_folha = 1
-        else:
-            # 2 linhas (3 cartelas na primeira, o resto na segunda)
-            self.colunas_por_linha = 3
-            self.linhas_por_folha = 2
-        
-        # Espaçamento entre cartelas
+        # Espaçamento fixo entre cartelas
         self.espacamento_h = 0.3 * cm
         self.espacamento_v = 0.3 * cm
-        
-        # Margem superior ajustável
-        self.margem_superior = 8.5 * cm if self.cartelas_por_folha > 3 else 7.5 * cm
+
+        # Distribuição por número de cartelas (1..6)
+        if self.cartelas_por_folha <= 2:
+            # 1 ou 2 cartelas: uma linha, justificadas
+            self.linhas_por_folha = 1
+            self.colunas_por_linha = self.cartelas_por_folha
+            self.margem_superior = 7.5 * cm
+        else:
+            # Sempre 2 linhas para 3..6 cartelas
+            self.linhas_por_folha = 2
+            if self.cartelas_por_folha == 3:
+                self.colunas_linha_1 = 2
+                self.colunas_linha_2 = 1
+            elif self.cartelas_por_folha == 4:
+                self.colunas_linha_1 = 2
+                self.colunas_linha_2 = 2
+            elif self.cartelas_por_folha == 5:
+                self.colunas_linha_1 = 3
+                self.colunas_linha_2 = 2
+            else:  # 6
+                self.colunas_linha_1 = 3
+                self.colunas_linha_2 = 3
+            self.margem_superior = 8.5 * cm
 
     def _carregar_fontes(self):
         """Registra as fontes personalizadas."""
@@ -142,11 +153,12 @@ class BingoGenerator:
             self.usar_fundo = True
         except Exception as e:
             print(f"Imagem de fundo não encontrada. Erro: {e}")
-
-        # Carrega imagem FREE
+        # Carrega imagem FREE (mantém PIL para compor sobre a cor de fundo)
         try:
             img = Image.open(self.IMAGEM_FREE)
-            self.img_free = ImageReader(img.resize((int(0.8*cm), int(0.8*cm))))
+            self._img_free_pil = img.convert('RGBA')
+            # fallback ImageReader de tamanho aproximado
+            self.img_free = ImageReader(img.resize((int(0.9*cm), int(0.9*cm))))
             self.usar_imagem_free = True
         except Exception as e:
             print(f"Imagem FREE não encontrada. Erro: {e}")
@@ -201,10 +213,10 @@ class BingoGenerator:
         c.setFont(self.FONTES['numeros'][0], 16)
         for linha in range(5):
             for col in range(5):
-                self._desenhar_numero(c, cartela[linha][col], x, y, linha, col)
+                self._desenhar_numero(c, cartela[linha][col], x, y, linha, col, indice)
 
     def _desenhar_numero(self, c: canvas.Canvas, conteudo, x: float, y: float, 
-                        linha: int, col: int):
+                        linha: int, col: int, indice: int):
         """Desenha um número ou FREE na posição especificada da cartela."""
         pos_x = x + col*(self.LARGURA_CARTELA/5) + (self.LARGURA_CARTELA/10)
         pos_y = y + self.ALTURA_CARTELA - 2*cm - linha*1.1*cm
@@ -219,36 +231,67 @@ class BingoGenerator:
         c.roundRect(box_x, box_y, box_width, box_height, 5, fill=0, stroke=1)
         
         if conteudo == "FREE":
-            if self.usar_imagem_free:
-                c.drawImage(self.img_free, pos_x-0.5*cm, pos_y-0.3*cm, 
-                          width=1*cm, height=1*cm)
+            if self.usar_imagem_free and hasattr(self, '_img_free_pil'):
+                try:
+                    size_px = (int(0.9*cm), int(0.9*cm))
+                    bg_hex = self.CORES_RODADAS[indice % len(self.CORES_RODADAS)]
+                    rgb = tuple(int(bg_hex.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+                    base = Image.new('RGBA', size_px, rgb + (255,))
+                    img_free_resized = self._img_free_pil.resize(size_px)
+                    base.paste(img_free_resized, (0, 0), img_free_resized)
+                    img_reader = ImageReader(base)
+                    c.drawImage(img_reader, pos_x-0.45*cm, pos_y-0.35*cm, width=0.9*cm, height=0.9*cm, mask='auto')
+                except Exception:
+                    c.drawCentredString(pos_x, pos_y, "X")
             else:
-                c.drawCentredString(pos_x, pos_y, "X")
+                if self.usar_imagem_free:
+                    c.drawImage(self.img_free, pos_x-0.45*cm, pos_y-0.35*cm, width=0.9*cm, height=0.9*cm)
+                else:
+                    c.drawCentredString(pos_x, pos_y, "X")
         else:
             c.drawCentredString(pos_x, pos_y, str(conteudo))
 
     def _calcular_posicao_cartela(self, posicao: int, largura_pagina: float) -> Tuple[float, float]:
         """Calcula a posição x,y de uma cartela baseado em sua posição na folha."""
         if self.linhas_por_folha == 1:
-            # Todas na mesma linha
-            x = (largura_pagina - (self.cartelas_por_folha * self.LARGURA_CARTELA) - 
-                ((self.cartelas_por_folha - 1) * self.espacamento_h)) / 2
-            x += posicao * (self.LARGURA_CARTELA + self.espacamento_h)
+            num_colunas = self.colunas_por_linha
+            pos_coluna = posicao
             y = self.margem_superior + 1 * cm
         else:
-            # Duas linhas (3 na primeira, resto na segunda)
-            if posicao < 3:
-                x = (largura_pagina - (3 * self.LARGURA_CARTELA) - (2 * self.espacamento_h)) / 2
-                x += posicao * (self.LARGURA_CARTELA + self.espacamento_h)
+            if posicao < self.colunas_linha_1:
+                num_colunas = self.colunas_linha_1
+                pos_coluna = posicao
                 y = self.margem_superior
             else:
-                pos = posicao - 3
-                cartelas_linha = self.cartelas_por_folha - 3
-                x = (largura_pagina - (cartelas_linha * self.LARGURA_CARTELA) - 
-                    ((cartelas_linha - 1) * self.espacamento_h)) / 2
-                x += pos * (self.LARGURA_CARTELA + self.espacamento_h)
+                num_colunas = self.colunas_linha_2
+                pos_coluna = posicao - self.colunas_linha_1
                 y = self.margem_superior - self.ALTURA_CARTELA - self.espacamento_v
-        
+
+        total_cards_width = num_colunas * self.LARGURA_CARTELA
+        if num_colunas == 1:
+            x = (largura_pagina - self.LARGURA_CARTELA) / 2
+        else:
+            # Tenta usar uma margem lateral desejada e reduz o gap se necessário
+            desired_side_margin = 0.6 * cm
+            min_gap = 0.12 * cm
+            default_gap = self.espacamento_h
+
+            # largura disponível entre margens desejadas
+            avail_width = largura_pagina - 2 * desired_side_margin
+            # gap necessário para que o bloco ocupe exatamente avail_width
+            if num_colunas - 1 > 0:
+                required_gap = (avail_width - total_cards_width) / (num_colunas - 1)
+            else:
+                required_gap = default_gap
+
+            # escolhe gap reduzido se isso permitir as margens desejadas, mas não menor que min_gap
+            gap = max(min_gap, min(default_gap, required_gap))
+
+            # calcula início centralizando o bloco resultante
+            total_block_width = total_cards_width + (num_colunas - 1) * gap
+            start_x = max((largura_pagina - total_block_width) / 2, 0)
+            x = start_x + pos_coluna * (self.LARGURA_CARTELA + gap)
+
         return x, y
 
     def criar_pdf(self):
