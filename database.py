@@ -41,13 +41,26 @@ class BingoDatabase:
             numeros TEXT,
             rodada INTEGER,
             premio TEXT,
-            utilizada INTEGER DEFAULT 0
+            utilizada INTEGER DEFAULT 0,
+            tipo_cartela TEXT DEFAULT 'normal'
         )
         ''')
         
         cursor.execute('''
         CREATE INDEX IF NOT EXISTS idx_evento ON cartelas (evento)
         ''')
+        
+        # Adiciona coluna tipo_cartela se ela não existir (para bancos existentes)
+        cursor.execute("PRAGMA table_info(cartelas)")
+        colunas = [col[1] for col in cursor.fetchall()]
+        if 'tipo_cartela' not in colunas:
+            try:
+                cursor.execute('''
+                ALTER TABLE cartelas ADD COLUMN tipo_cartela TEXT DEFAULT 'normal'
+                ''')
+                conn.commit()
+            except:
+                pass
         
         conn.commit()
 
@@ -69,16 +82,16 @@ class BingoDatabase:
         return cursor.fetchone()[0]
 
     def salvar_cartela(self, evento: str, id_cartela: str, folha: int, 
-                      posicao: int, numeros: List[Tuple], rodada: int, premio: str):
+                      posicao: int, numeros: List[Tuple], rodada: int, premio: str, tipo_cartela: str = 'normal'):
         conn = self.get_connection()
         cursor = conn.cursor()
         numeros_str = str(numeros)
         
         cursor.execute('''
         INSERT OR REPLACE INTO cartelas 
-        (id, evento, folha, posicao_na_folha, numeros, rodada, premio)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (id_cartela, evento, folha, posicao, numeros_str, rodada, premio))
+        (id, evento, folha, posicao_na_folha, numeros, rodada, premio, tipo_cartela)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (id_cartela, evento, folha, posicao, numeros_str, rodada, premio, tipo_cartela))
         
         conn.commit()
 

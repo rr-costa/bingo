@@ -240,14 +240,14 @@ class BingoGenerator:
                     img_free_resized = self._img_free_pil.resize(size_px)
                     base.paste(img_free_resized, (0, 0), img_free_resized)
                     img_reader = ImageReader(base)
-                    c.drawImage(img_reader, pos_x-0.45*cm, pos_y-0.35*cm, width=0.9*cm, height=0.9*cm, mask='auto')
+                    c.drawImage(img_reader, pos_x-0.45*cm, pos_y-0.25*cm, width=0.9*cm, height=0.9*cm, mask='auto')
                 except Exception:
-                    c.drawCentredString(pos_x, pos_y, "X")
+                    c.drawCentredString(pos_x, pos_y, "FREE")
             else:
                 if self.usar_imagem_free:
-                    c.drawImage(self.img_free, pos_x-0.45*cm, pos_y-0.35*cm, width=0.9*cm, height=0.9*cm)
+                    c.drawImage(self.img_free, pos_x-0.45*cm, pos_y-0.25*cm, width=0.9*cm, height=0.9*cm)
                 else:
-                    c.drawCentredString(pos_x, pos_y, "X")
+                    c.drawCentredString(pos_x, pos_y, "FREE")
         else:
             c.drawCentredString(pos_x, pos_y, str(conteudo))
 
@@ -343,7 +343,8 @@ class BingoGenerator:
                     posicao=posicao + 1,
                     numeros=self.cartelas[idx],
                     rodada=rodada,
-                    premio=premio
+                    premio=premio,
+                    tipo_cartela='normal'
                 )
 
                 self.desenhar_cartela(c, self.cartelas[idx], x, y, posicao)
